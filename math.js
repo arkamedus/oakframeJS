@@ -43,9 +43,19 @@ Vec2.prototype.div = function (vec2) {
     this.y /= vec2.y;
     return this;
 };
+/** @type {function(Vec2):number} */
+Vec2.prototype.dot = function (a) {
+    return (this.x * a.x + this.y * a.y);
+};
 /** @type {function():Vec2} */
 Vec2.prototype.clone = function () {
     return (new Vec2().set(this.x, this.y));
+};
+/** @type {function(Vec2):Vec2} */
+Vec2.prototype.copy = function (a) {
+    this.x = a.x;
+    this.y = a.y;
+    return this;
 };
 /** @type {function(Vec2):number} */
 Vec2.prototype.dist = function (vec) {
@@ -139,12 +149,17 @@ Vec3.prototype.copy = function (a) {
 };
 /** @type {function(Vec3):Vec3} */
 Vec3.prototype.pointTo = function (vec) {
-    var a = this.clone().sub(vec).divI(this.dist(vec));
-    return a;
+    //var a = this.clone();
+   // a.sub(vec).divI(a.dist(vec));
+    var d =this.dist(vec);
+    this.sub(vec).divI(d);
+    return this;
+   // return a;
 };
 /** @type {function(Vec3):number} */
 Vec3.prototype.dist = function (vec) {
-    return Math.sqrt(Math.pow((this.x - vec.x), 2) + Math.pow((this.y - vec.y), 2) + Math.pow((this.z - vec.z), 2));
+    return Math.sqrt((this.x - vec.x)*(this.x - vec.x) + (this.y - vec.y)*(this.y - vec.y) + (this.z - vec.z)*(this.z - vec.z));
+   // return Math.sqrt(Math.pow((this.x - vec.x), 2) + Math.pow((this.y - vec.y), 2) + Math.pow((this.z - vec.z), 2));
 };
 /** @type {function():number} */
 Vec3.prototype.mag = function () {
