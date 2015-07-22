@@ -37,11 +37,27 @@ Vec2.prototype.mul = function (vec2) {
     this.y *= vec2.y;
     return this;
 };
+/** @type {function(number):Vec2} */
+Vec2.prototype.mulI = function (amt) {
+    this.x *= amt;
+    this.y *= amt;
+    return this;
+};
+/** @type {function(number):Vec2} */
+Vec2.prototype.divI = function (amt) {
+    this.x /= amt;
+    this.y /= amt;
+    return this;
+};
 /** @type {function(Vec2):Vec2} */
 Vec2.prototype.div = function (vec2) {
     this.x /= vec2.x;
     this.y /= vec2.y;
     return this;
+};
+/** @type {function():number} */
+Vec2.prototype.mag = function () {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
 };
 /** @type {function(Vec2):number} */
 Vec2.prototype.dot = function (a) {
@@ -133,8 +149,11 @@ Vec3.prototype.divI = function (a) {
 /** @type {function(number):Vec3} */
 Vec3.prototype.rotZ = function (a) {
     a *= (Math.PI / 180);
-    var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
-    return b;
+    //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
+    var xx =(this.x * Math.cos(a) - this.y * Math.sin(a)),yy = (this.x * Math.sin(a) + this.y * Math.cos(a));
+    this.x = xx;
+    this.y = yy;
+    return this;
 };
 /** @type {function(Vec3):number} */
 Vec3.prototype.dot = function (a) {
@@ -224,6 +243,18 @@ Tri3.prototype.center = function () {
     return new Vec3().set((this.pos1.x + this.pos2.x + this.pos3.x) / 3, (this.pos1.y + this.pos2.y + this.pos3.y) / 3, (this.pos1.z + this.pos2.z + this.pos3.z) / 3);
 };
 
+function triangleGrow(p1,p2,p3,amt){
+    var center =new Vec2();
+    center.x= (p1.x +p2.x +p3.x)/3;
+    center.y= (p1.y +p2.y +p3.y)/3;
+    
+    var nv = new Vec2();
+    
+    p1.copy(nv.copy(p1).sub(center).mulI((nv.mag()+amt)/(nv.mag())).add(center));
+    p2.copy(nv.copy(p2).sub(center).mulI((nv.mag()+amt)/(nv.mag())).add(center));
+    p3.copy(nv.copy(p3).sub(center).mulI((nv.mag()+amt)/(nv.mag())).add(center));
+}
+
 
 function rayTriangle(origin, direction, tri) { // rayTriangle(from:Vec3, direction:Vec3 triangle:Face3)
     var a = (tri.pos2.y - tri.pos1.y) * (tri.pos3.z - tri.pos1.z) - (tri.pos3.y - tri.pos1.y) * (tri.pos2.z - tri.pos1.z),
@@ -250,6 +281,9 @@ function rayTriangle(origin, direction, tri) { // rayTriangle(from:Vec3, directi
     return 0 > c * a + h * i + M * t ? !1 : new Vec3().set(f, g, s); //[f, g, s, vecDist(y, [f, g, s])];
 }
 
+var bias = function(v, b){
+ return v / ((1 / b - 2) * (1 - v) + 1);   
+}
 
 
 /**
