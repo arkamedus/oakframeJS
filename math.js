@@ -246,6 +246,32 @@ Vec3.prototype.invert = function () {
 };
 
 
+// 3D Vector Calculations
+/**
+ * @constructor
+ */
+function RGBA() {
+    this.r = 0;
+    this.g = 0;
+    this.b = 0;
+    this.a = 0;
+}
+RGBA.prototype.set = function (r, g, b, a) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+    return this;
+}
+RGBA.prototype.copy = function (rgba) {
+    this.r = rgba.r;
+    this.g = rgba.g;
+    this.b = rgba.b;
+    this.a = rgba.a;
+    return this;
+}
+
+
 //2D Triangle Functions
 /**
  * @constructor
@@ -276,6 +302,7 @@ function Tri3() {
     this.pos1 = new Vec3();
     this.pos2 = new Vec3();
     this.pos3 = new Vec3();
+    this.color = new RGBA();
 }
 /**
  * @type {function():Vec3} 
@@ -343,6 +370,7 @@ function Projection() {
     this.tfov = 1;
     this.tfovpower = 1;
     this.tfovpoweraspect = 1;
+    return this;
 }
 /** @type {function(Camera):Projection} */
 Projection.prototype.set = function (camera) {
@@ -367,9 +395,7 @@ Projection.prototype.set = function (camera) {
 
     this.u.mulI(this.tfov);
 
-    this.v.set(this.u.y * this.d.z - this.d.y * this.u.z, this.u.z * this.d.x - this.d.z * this.u.x, this.u.x * this.d.y - this.d.x * this.u.y);
-
-    this.v.mulI(camera.aspect);
+    this.v.set(this.u.y * this.d.z - this.d.y * this.u.z, this.u.z * this.d.x - this.d.z * this.u.x, this.u.x * this.d.y - this.d.x * this.u.y).mulI(camera.aspect);
 
     return this;
 };
@@ -403,6 +429,8 @@ Projection.prototype.toScreen = function (surface, position, from, target) {
         target.x = (this.mm + 1) / 2 * surface._width;
         this.mm = this.p.dot(this.u) / this.tfovpower; //(this.p.x * this.u.x + this.p.y * this.u.y + this.p.z * this.u.z) / this.tfovpower;
         target.y = (1 - this.mm) / 2 * surface._height;
+    } else {
+        target.set(-99, -99);
     }
 
 };

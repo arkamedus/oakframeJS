@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Oakstead Arts,Gordon Goodrum">
+    <meta name="robots" content="all">
+    <!--
+
+            `:/:....:.....`                               
+          `-=oak+:-.`````.:-`                              
+         ./ste:`         -/:`                             
+        .::-.`           `//`                             
+      `-/:.              `//.                             
+     .+ad///.            .+/`                             
+     `..``::.           `:+:                              
+        `-/-            .+/.                              
+       .::.            .//.   ``                          
+      ./:`            -++:.........`                      
+    `:/-`           `:ar/-``     `-:.                     
+   ./+-            `-/:.`         .:.                     
+  .++-                            -:.                     
+ .+t-                            `::.                     
+`+s:`                           `-:-`                     
+.+&/:.....``                   `-/:`                      
+ `.....-::::::-.`             `:/:.`..`                   
+          ``.-:++-   `-/-`   .+go/::+/.                   
+            `.:::.    -rd-  .ong:.-/+:`                   
+         `-://-`       :oo. `.-..:++-`                    
+      `-//:-.`         `+d+` `.:/+:.                      
+    `-ru:.          .:-`.m@+:+o+-`                        
+    -ak-            /oa-`+koa+-`                          
+    -ko-`           /ak+oako`                            
+     `-//:-``      `+akoa-:ko-                            
+        .-///:....-+akoak-`/o+`                           
+           `.-://+++:. .ak-`/o-                           
+                        .ak..o+`                          
+                         .ak/+o:                          
+                          .akoak.                         
+                           .oako/`                        
+                            .+ako:                        
+                             `/ako.                       
+                              `/ak:                       
+                                `.`
+
+OAKFRAME.js (raycast.htm) — Javascript and HTML Framework
+
+Current Release :   1.2
+Last Modified   :   July 23rd, 2015
+License         :   Open Source with attribution      
+Contact         :   stopgordy@gmail.com
+
+Copyright 2015 — Oakstead Arts, Gordon Goodrum. All rights reserved.
+
+-->
+
+    <title>OA Interactive</title>
+    <meta charset="utf-8">
+    <!-- <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"> -->
+
+    <script src="math.js"></script>
+
+</head>
+
+<body>
+
+    <div id='memory'></div>
+    <div id='console'></div>
+    <canvas id='surface'></canvas>
+
+    <script type='text/javascript'>
+        
+
+        // (function() {
+        var _timestamp_start = 0,
+            _timestamp_end = 0;
+
+        function out(str) {
+            document.getElementById('console').innerHTML = str;
+        }
+
+        function Camera() {
+            this.from = new Vec3().set(0, 2.5, 6);
+            this.to = new Vec3().set(0, 0, 0.86);
+            this.fov = 40;
+            this.up = new Vec3().set(0, 0, 1);
+            this.samples = 1;
+            this.aspect = 1;
+            this.lightsource = new Vec3().set(8, -1, 16);
+            return this;
+        };
+
+        
+
+        function Ray() {
+            this.origin = new Vec3();
+            this.direction = new Vec3();
+            this._dir = new Vec3();
+            this._cast = new Vec3();
+            this._cast_result = false;
+            this._far = 24;
+            this.color = new RGBA();
+            return this;
+        };
+
+        function Surface() {
+            this._element = document.getElementById('surface');
+            this._context = this._element.getContext('2d');
+            this._width = 256;
+            this._height =256;
+            this._element.width = this._width;
+            this._element.height = this._height;
+            return this;
+
+        }
+
+        var mesh = []; //;[-1, -1, 0, 255, 25, 25, 1, -1, 0, 25, 255, 25, -1, 1, 0, 25, 25, 255];
+
+        // FLOOR
+        var tri = new Tri3();
+        tri.pos1.set(-1, -1, 0).mulI(3);
+        tri.pos2.set(1, -1, 0).mulI(3);
+        tri.pos3.set(-1, 1, 0).mulI(3);
+        tri.color.set(255, 255, 255, 255);
+        mesh.push(tri);
+
+        tri = new Tri3();
+        tri.pos1.set(1, 1, 0).mulI(3);
+        tri.pos2.set(1, -1, 0).mulI(3);
+        tri.pos3.set(-1, 1, 0).mulI(3);
+        tri.color.set(255, 255, 255, 255);
+        mesh.push(tri);
+    
+
+
+        // =BACK
+        tri = new Tri3();
+        tri.pos1.set(-1, -1, 2);
+        tri.pos2.set(1, -1, 2);
+        tri.pos3.set(-1, -1, 0);
+        tri.color.set(0, 255, 0, 255);
+        mesh.push(tri);
+
+        tri = new Tri3();
+        tri.pos1.set(1, -1, 0);
+        tri.pos2.set(1, -1, 2);
+        tri.pos3.set(-1, -1, 0);
+        tri.color.set(0, 255, 0, 255);
+        mesh.push(tri);
+
+        // =RIGHT
+        tri = new Tri3();
+        tri.pos1.set(-1, -1, 2).rotZ(90);
+        tri.pos2.set(1, -1, 2).rotZ(90);
+        tri.pos3.set(-1, -1, 0).rotZ(90);
+        tri.color.set(0, 0, 255, 255);
+        mesh.push(tri);
+
+        tri = new Tri3();
+        tri.pos1.set(1, -1, 0).rotZ(90);
+        tri.pos2.set(1, -1, 2).rotZ(90);
+        tri.pos3.set(-1, -1, 0).rotZ(90);
+        tri.color.set(0, 0, 255, 255);
+        mesh.push(tri);
+
+        // =LEFT
+        tri = new Tri3();
+        tri.pos1.set(-1, -1, 2).rotZ(-90);
+        tri.pos2.set(1, -1, 2).rotZ(-90);
+        tri.pos3.set(-1, -1, 0).rotZ(-90);
+        tri.color.set(255, 255, 0, 255);
+        mesh.push(tri);
+
+        tri = new Tri3();
+        tri.pos1.set(1, -1, 0).rotZ(-90);
+        tri.pos2.set(1, -1, 2).rotZ(-90);
+        tri.pos3.set(-1, -1, 0).rotZ(-90);
+        tri.color.set(255, 255, 0, 255);
+        mesh.push(tri);
+
+        tri = new Tri3();
+        tri.pos1.set(2, 0, 1).rotZ(-90);
+        tri.pos2.set(0, 0.42, 1).rotZ(-90);
+        tri.pos3.set(0, -0.42, 1).rotZ(-90);
+        tri.color.set(255, 255, 255, 255);
+        mesh.push(tri);
+
+        var scan = new Vec2().set(0, 0);
+        var camera = new Camera();
+        var projection = new Projection().set(camera);
+        var surface = new Surface();
+
+        var ray = new Ray();
+
+        //var draw_buffer = new Uint8ClampedArray((surface._width*surface._height)*4);
+        var draw_buffer;
+        //   var buf = new ArrayBuffer(draw_buffer.length);
+        //   var buf8 = new Uint8ClampedArray(buf);
+
+        function program() { // RAYTRACER
+
+            draw_buffer = surface._context.createImageData(surface._width, surface._height);
+           // camera.from.rotZ(1);
+            camera.lightsource.rotZ(1);
+            projection.set(camera);
+            //ray.origin.copy(camera.from);
+            //this.ram = new Array
+            for (var x = 0; x < surface._width * camera.samples; x++) {
+                for (var y = 0; y < surface._height * camera.samples; y++) {
+                    scan.set((x / camera.samples), (y / camera.samples));
+                    ray.origin.copy(camera.from);
+                    projection.toWorld(surface, scan, camera.from, ray._dir);
+                    ray.direction.copy(ray._dir.pointTo(ray.origin));
+                    ray._cast.set(0, 0, -99999);
+                    for (var i = 0; i < mesh.length; i++) {
+                        ray._cast_result = rayTriangle(ray.origin, ray.direction, mesh[i]);
+                        if (ray._cast_result) {
+                            if (ray._cast_result.dist(camera.from) < ray._cast.dist(camera.from)) {
+                                ray._cast.copy(ray._cast_result);
+                                ray.color.copy(mesh[i].color);
+                            }
+
+
+                        }
+                    }
+
+                    if (ray._cast.dist(camera.from) < 999) {
+                        ray.color.r = ((1 - ray._cast.dist(ray.origin) / ray._far) * (ray.color.r)) | 0;
+                        ray.color.g = ((1 - ray._cast.dist(ray.origin) / ray._far) * (ray.color.g)) | 0;
+                        ray.color.b = ((1 - ray._cast.dist(ray.origin) / ray._far) * (ray.color.b)) | 0;
+                        ray.color.a = 255; //((x + (y * camera.samples)) % camera.samples) / camera.samples;
+
+
+                        // LIGHT CALCULATION
+                        ray.origin.copy(camera.lightsource);
+                        ray.direction.copy(ray._dir.copy(ray._cast).pointTo(camera.lightsource));
+                        //ray.origin.add(ray._dir.copy(ray.direction).normalize().divI(10));
+                        //ray._cast.x  *= 1 +((0.5-Math.random())/10000000);
+                        //ray._cast.y  *= 1 +((0.5-Math.random())/10000000);
+                        //ray._cast.z  *= 1 +((0.5-Math.random())/10000000);
+                        ray._dir.copy(ray._cast);
+                       ray._cast.set(0, 0, -99999);
+                        for (var i = 0; i < mesh.length; i++) {
+                            ray._cast_result = rayTriangle(ray.origin, ray.direction, mesh[i]);
+                            if (ray._cast_result) {
+                                if (camera.lightsource.dist(ray._cast_result) < camera.lightsource.dist(ray._dir)) {
+                                    ray._cast.copy(ray._cast_result);
+                                    //ray.color.copy(mesh[i].color);
+                                }
+
+
+                            }
+                        }
+                        if (ray._cast.dist(camera.lightsource) < 999) {
+                            ray.color.r/=2;
+                            ray.color.g/=2;
+                            ray.color.b/=2;
+                        }
+
+
+
+                        draw_buffer.data[(((x) + (y * surface._height)) * 4) + 0] = ray.color.r;
+                        draw_buffer.data[(((x) + (y * surface._height)) * 4) + 1] = ray.color.g;
+                        draw_buffer.data[(((x) + (y * surface._height)) * 4) + 2] = ray.color.b;
+                        draw_buffer.data[(((x) + (y * surface._height)) * 4) + 3] = ray.color.a;
+                        /*surface._context.beginPath();
+                        surface._context.fillStyle = 'rgba(' + ray.color.x + ',' + ray.color.y + ',' + ray.color.z + ',' + a + ')';
+                        surface._context.rect((x / camera.samples) | 0, (y / camera.samples) | 0, 1, 1);
+                        surface._context.fill();*/
+                    }
+                }
+            }
+            //console.log(buf8);
+            //draw_buffer.data.set(buf8);
+            surface._context.putImageData(draw_buffer, 0, 0);
+
+
+        };
+
+        window.setInterval(function() {
+            _timestamp_start = performance.now()
+            program();
+            _timestamp_end = performance.now();
+            out('Program completed in: ' + (_timestamp_end - _timestamp_start) + 'ms');
+        }, (15) | 0);
+
+    </script>
+
+</body>
+
+
+
+
+
+
+
+
+
+
+</html>
