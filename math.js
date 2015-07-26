@@ -93,6 +93,10 @@ Vec2.prototype.dist = function (vec) {
 
 
 // 3D Vector Calculations
+
+//TEMP VECTOR3 CACHE
+var Vec3_TempI = 0,
+    Vec3_TempV = new Vec3();
 /**
  * @constructor
  */
@@ -164,10 +168,10 @@ Vec3.prototype.divI = function (a) {
 Vec3.prototype.rotX = function (deg) {
     deg *= (Math.PI / 180);
     //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
-    var yy = (this.y * Math.cos(deg) - this.z * Math.sin(deg)),
-        zz = (this.y * Math.sin(deg) + this.z * Math.cos(deg));
-    this.y = yy;
-    this.z = zz;
+    Vec3_TempV.y = (this.y * Math.cos(deg) - this.z * Math.sin(deg));
+    Vec3_TempV.z = (this.y * Math.sin(deg) + this.z * Math.cos(deg));
+    this.y = Vec3_TempV.y;
+    this.z = Vec3_TempV.z;
     return this;
 };
 
@@ -186,10 +190,10 @@ Vec3.prototype.rotY = function (deg) {
 Vec3.prototype.rotZ = function (deg) {
     deg *= (Math.PI / 180);
     //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
-    var xx = (this.x * Math.cos(deg) - this.y * Math.sin(deg)),
-        yy = (this.x * Math.sin(deg) + this.y * Math.cos(deg));
-    this.x = xx;
-    this.y = yy;
+    Vec3_TempV.x = (this.x * Math.cos(deg) - this.y * Math.sin(deg));
+    Vec3_TempV.y = (this.x * Math.sin(deg) + this.y * Math.cos(deg));
+    this.x = Vec3_TempV.x;
+    this.y = Vec3_TempV.y;
     return this;
 };
 
@@ -211,8 +215,8 @@ Vec3.prototype.copy = function (a) {
 Vec3.prototype.pointTo = function (vec) {
     //var a = this.clone();
     // a.sub(vec).divI(a.dist(vec));
-    var d = this.dist(vec);
-    this.sub(vec).divI(d);
+    // var d = this.dist(vec);
+    this.sub(vec).normalize();
     return this;
     // return a;
 };
@@ -227,10 +231,10 @@ Vec3.prototype.mag = function () {
 };
 /** @type {function():Vec3} */
 Vec3.prototype.normalize = function () {
-    var mag = this.mag();
-    this.x /= mag;
-    this.y /= mag;
-    this.z /= mag;
+    Vec3_TempI = this.mag();
+    this.x /= Vec3_TempI;
+    this.y /= Vec3_TempI;
+    this.z /= Vec3_TempI;
     return this;
 };
 /** @type {function():Vec3} */
@@ -283,12 +287,26 @@ RGBA.prototype.copy = function (rgba) {
  * @param {number} y3
  */
 function Tri2(x1, y1, x2, y2, x3, y3) {
-    this.x1 = x1 || 0;
-    this.y1 = x1 || 0;
-    this.x2 = x2 || 0;
-    this.y2 = x2 || 0;
-    this.x3 = x3 || 0;
-    this.y3 = x3 || 0;
+    this.pos1 = new Vec2();
+    this.pos2 = new Vec2();
+    this.pos3 = new Vec2();
+}
+Tri2.prototype.isPointInside = function (point) {
+    var s = this.pos1.y * this.pos3.x - this.pos1.x * this.pos3.y + (this.pos3.y - this.pos1.y) * point.x + (this.pos1.x - this.pos3.x) * point.y,
+        t = this.pos1.x * this.pos2.y - this.pos1.y * this.pos2.x + (this.pos1.y - this.pos2.y) * point.x + (this.pos2.x - this.pos1.x) * point.y;
+
+    if ((s < 0) != (t < 0)) {
+        return false;
+    }
+
+    var a = -this.pos2.y * this.pos3.x + this.pos1.y * (this.pos3.x - this.pos2.x) + this.pos1.x * (this.pos2.y - this.pos3.y) + this.pos2.x * this.pos3.y;
+    if (a < 0) {
+        s = -s;
+        t = -t;
+        a = -a;
+    }
+    return s > 0 && t > 0 && (s + t) < a;
+
 }
 
 
@@ -323,30 +341,35 @@ function triangleGrow(p1, p2, p3, amt) {
     p3.copy(nv.copy(p3).sub(center).mulI((nv.mag() + amt) / (nv.mag())).add(center));
 }
 
+//TEMP TRIANGLE CACHE
+
+var Tri3_Temp = {
+    a:0,i:0,t:0,e:0,u:0,v:0,f:0,g:0,s:0,c:0,h:0,M:0
+}
 
 function rayTriangle(origin, direction, tri) { // rayTriangle(from:Vec3, direction:Vec3 triangle:Face3)
-    var a = (tri.pos2.y - tri.pos1.y) * (tri.pos3.z - tri.pos1.z) - (tri.pos3.y - tri.pos1.y) * (tri.pos2.z - tri.pos1.z),
-        i = (tri.pos2.z - tri.pos1.z) * (tri.pos3.x - tri.pos1.x) - (tri.pos3.z - tri.pos1.z) * (tri.pos2.x - tri.pos1.x),
-        t = (tri.pos2.x - tri.pos1.x) * (tri.pos3.y - tri.pos1.y) - (tri.pos3.x - tri.pos1.x) * (tri.pos2.y - tri.pos1.y),
-        e = Math.sign(a * (tri.pos1.x - origin.x) + i * (tri.pos1.y - origin.y) + t * (tri.pos1.z - origin.z)),
-        u = direction.x * a + direction.y * i + direction.z * t;
-    if (e != Math.sign(u) || 0 == e) return !1;
-    var v = (a * tri.pos1.x + i * tri.pos1.y + t * tri.pos1.z - (a * origin.x + i * origin.y + t * origin.z)) / u,
-        f = direction.x * v + origin.x,
-        g = direction.y * v + origin.y,
-        s = direction.z * v + origin.z,
-        c = (tri.pos1.y - g) * (tri.pos2.z - s) - (tri.pos2.y - g) * (tri.pos1.z - s),
-        h = (tri.pos1.z - s) * (tri.pos2.x - f) - (tri.pos2.z - s) * (tri.pos1.x - f),
-        M = (tri.pos1.x - f) * (tri.pos2.y - g) - (tri.pos2.x - f) * (tri.pos1.y - g);
-    if (0 > c * a + h * i + M * t) return !1;
-    c = (tri.pos2.y - g) * (tri.pos3.z - s) - (tri.pos3.y - g) * (tri.pos2.z - s);
-    h = (tri.pos2.z - s) * (tri.pos3.x - f) - (tri.pos3.z - s) * (tri.pos2.x - f);
-    M = (tri.pos2.x - f) * (tri.pos3.y - g) - (tri.pos3.x - f) * (tri.pos2.y - g);
-    if (0 > c * a + h * i + M * t) return !1;
-    c = (tri.pos3.y - g) * (tri.pos1.z - s) - (tri.pos1.y - g) * (tri.pos3.z - s);
-    h = (tri.pos3.z - s) * (tri.pos1.x - f) - (tri.pos1.z - s) * (tri.pos3.x - f);
-    M = (tri.pos3.x - f) * (tri.pos1.y - g) - (tri.pos1.x - f) * (tri.pos3.y - g);
-    return 0 > c * a + h * i + M * t ? !1 : new Vec3().set(f, g, s); //[f, g, s, vecDist(y, [f, g, s])];
+    Tri3_Temp.a = (tri.pos2.y - tri.pos1.y) * (tri.pos3.z - tri.pos1.z) - (tri.pos3.y - tri.pos1.y) * (tri.pos2.z - tri.pos1.z);
+        Tri3_Temp.i = (tri.pos2.z - tri.pos1.z) * (tri.pos3.x - tri.pos1.x) - (tri.pos3.z - tri.pos1.z) * (tri.pos2.x - tri.pos1.x);
+        Tri3_Temp.t = (tri.pos2.x - tri.pos1.x) * (tri.pos3.y - tri.pos1.y) - (tri.pos3.x - tri.pos1.x) * (tri.pos2.y - tri.pos1.y);
+        Tri3_Temp.e = Math.sign(Tri3_Temp.a * (tri.pos1.x - origin.x) + Tri3_Temp.i * (tri.pos1.y - origin.y) + Tri3_Temp.t * (tri.pos1.z - origin.z));
+        Tri3_Temp.u = direction.x * Tri3_Temp.a + direction.y * Tri3_Temp.i + direction.z * Tri3_Temp.t;
+    if (Tri3_Temp.e != Math.sign(Tri3_Temp.u) || 0 == Tri3_Temp.e) return !1;
+    Tri3_Temp.v = (Tri3_Temp.a * tri.pos1.x + Tri3_Temp.i * tri.pos1.y + Tri3_Temp.t * tri.pos1.z - (Tri3_Temp.a * origin.x + Tri3_Temp.i * origin.y + Tri3_Temp.t * origin.z)) / Tri3_Temp.u;
+        Tri3_Temp.f = direction.x * Tri3_Temp.v + origin.x;
+        Tri3_Temp.g = direction.y * Tri3_Temp.v + origin.y;
+        Tri3_Temp.s = direction.z * Tri3_Temp.v + origin.z;
+        Tri3_Temp.c = (tri.pos1.y - Tri3_Temp.g) * (tri.pos2.z - Tri3_Temp.s) - (tri.pos2.y - Tri3_Temp.g) * (tri.pos1.z - Tri3_Temp.s);
+        Tri3_Temp.h = (tri.pos1.z - Tri3_Temp.s) * (tri.pos2.x - Tri3_Temp.f) - (tri.pos2.z - Tri3_Temp.s) * (tri.pos1.x - Tri3_Temp.f);
+        Tri3_Temp.M = (tri.pos1.x - Tri3_Temp.f) * (tri.pos2.y - Tri3_Temp.g) - (tri.pos2.x - Tri3_Temp.f) * (tri.pos1.y - Tri3_Temp.g);
+    if (0 > Tri3_Temp.c * Tri3_Temp.a + Tri3_Temp.h * Tri3_Temp.i + Tri3_Temp.M * Tri3_Temp.t) return !1;
+    Tri3_Temp.c = (tri.pos2.y - Tri3_Temp.g) * (tri.pos3.z - Tri3_Temp.s) - (tri.pos3.y - Tri3_Temp.g) * (tri.pos2.z - Tri3_Temp.s);
+    Tri3_Temp.h = (tri.pos2.z - Tri3_Temp.s) * (tri.pos3.x - Tri3_Temp.f) - (tri.pos3.z - Tri3_Temp.s) * (tri.pos2.x - Tri3_Temp.f);
+    Tri3_Temp.M = (tri.pos2.x - Tri3_Temp.f) * (tri.pos3.y - Tri3_Temp.g) - (tri.pos3.x - Tri3_Temp.f) * (tri.pos2.y - Tri3_Temp.g);
+    if (0 > Tri3_Temp.c * Tri3_Temp.a + Tri3_Temp.h * Tri3_Temp.i + Tri3_Temp.M * Tri3_Temp.t) return !1;
+    Tri3_Temp.c = (tri.pos3.y - Tri3_Temp.g) * (tri.pos1.z - Tri3_Temp.s) - (tri.pos1.y - Tri3_Temp.g) * (tri.pos3.z - Tri3_Temp.s);
+    Tri3_Temp.h = (tri.pos3.z - Tri3_Temp.s) * (tri.pos1.x - Tri3_Temp.f) - (tri.pos1.z - Tri3_Temp.s) * (tri.pos3.x - Tri3_Temp.f);
+    Tri3_Temp.M = (tri.pos3.x - Tri3_Temp.f) * (tri.pos1.y - Tri3_Temp.g) - (tri.pos1.x - Tri3_Temp.f) * (tri.pos3.y - Tri3_Temp.g);
+    return 0 > Tri3_Temp.c * Tri3_Temp.a + Tri3_Temp.h * Tri3_Temp.i + Tri3_Temp.M * Tri3_Temp.t ? !1 : new Vec3().set(Tri3_Temp.f, Tri3_Temp.g, Tri3_Temp.s); //[f, g, s, vecDist(y, [f, g, s])];
 }
 
 var bias = function (v, b) {
