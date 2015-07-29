@@ -164,9 +164,11 @@ Vec3.prototype.divI = function (a) {
 };
 
 
+
+console.warn('Function Vec3.rotations should be converted to radians, not degrees');
 /** @type {function(number):Vec3} */
 Vec3.prototype.rotX = function (deg) {
-    deg *= (Math.PI / 180);
+   // deg *= (Math.PI / 180);
     //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
     Vec3_TempV.y = (this.y * Math.cos(deg) - this.z * Math.sin(deg));
     Vec3_TempV.z = (this.y * Math.sin(deg) + this.z * Math.cos(deg));
@@ -177,18 +179,18 @@ Vec3.prototype.rotX = function (deg) {
 
 /** @type {function(number):Vec3} */
 Vec3.prototype.rotY = function (deg) {
-    deg *= (Math.PI / 180);
+    //deg *= (Math.PI / 180);
     //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
-    var xx = (this.x * Math.cos(deg) - this.z * Math.sin(deg)),
-        zz = (this.x * Math.sin(deg) + this.z * Math.cos(deg));
-    this.x = xx;
-    this.z = zz;
+    Vec3_TempV.x = (this.x * Math.cos(deg) - this.z * Math.sin(deg));
+    Vec3_TempV.z = (this.x * Math.sin(deg) + this.z * Math.cos(deg));
+    this.x = Vec3_TempV.x;
+    this.z = Vec3_TempV.z;
     return this;
 };
 
 /** @type {function(number):Vec3} */
 Vec3.prototype.rotZ = function (deg) {
-    deg *= (Math.PI / 180);
+    //deg *= (Math.PI / 180);
     //var b = new Vec3().set((this.x * Math.cos(a) - this.y * Math.sin(a)), (this.x * Math.sin(a) + this.y * Math.cos(a)), this.z);
     Vec3_TempV.x = (this.x * Math.cos(deg) - this.y * Math.sin(deg));
     Vec3_TempV.y = (this.x * Math.sin(deg) + this.y * Math.cos(deg));
@@ -197,7 +199,11 @@ Vec3.prototype.rotZ = function (deg) {
     return this;
 };
 
-
+/** @type {function():Vec3} */
+Vec3.prototype.flipX = function () {
+    this.x*=-1;
+    return this;
+};
 
 
 /** @type {function(Vec3):number} */
@@ -248,6 +254,29 @@ Vec3.prototype.invert = function () {
     this.z *= -1;
     return this;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // 3D Vector Calculations
